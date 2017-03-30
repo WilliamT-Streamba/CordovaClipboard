@@ -29,6 +29,17 @@ Clipboard.prototype.paste = function (onSuccess, onFail) {
 	cordova.exec(onSuccess, onFail, "Clipboard", "paste", []);
 };
 
+/**
+ * 
+ */
+
+Clipboard.prototype.onCopy = function (eventName, onSuccess, onFail) {
+  if (typeof eventName === "undefined" || typeof eventName === null) {
+    eventName = "";
+  }
+  cordova.exec(function(result) {}, function(result){}, "Clipboard", "listenForCopy", [eventName]);
+}
+
 // Register the plugin
 var clipboard = new Clipboard();
 module.exports = clipboard;
