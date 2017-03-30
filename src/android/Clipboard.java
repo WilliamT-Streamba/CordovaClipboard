@@ -10,13 +10,15 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONException;
 
+import android.util.Log;
+
 import android.content.Context;
 import android.content.ClipboardManager;
 import android.content.ClipData;
 import android.content.ClipDescription;
 
 public class Clipboard extends CordovaPlugin {
-
+    private ClipboardManager.OnPrimaryClipChangedListener primaryClipChangedListener;
     private static final String actionCopy = "copy";
     private static final String actionPaste = "paste";
     private static final String copyListener = "listenForCopy";
@@ -73,26 +75,29 @@ public class Clipboard extends CordovaPlugin {
                 callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, e.toString()));
             }
         } else if (action.equals(copyListener)) {
-                  cordova.getActivity().runOnUiThread(new Runnable() {
-          public void run() {
-            webView.loadUrl("javascript:console.log('clipboard-called-copy-listener');");
+          if (primaryClipChangedListener == null) {
+            primaryClipChangedListener = new ClipboardManager.OnPrimaryClipChangedListener() {
+              public void onPrimaryClipChanged() {
+                cordova.getActivity().runOnUiThread(new Runnable() {
+                  public void run() {
+                    webView.loadUrl("javascript:cordova.fireDocumentEvent('itemCopiedToClipboard')");
+                  }
+                });
+              }
+            };
           }
-        });
-          ClipboardManager.OnPrimaryClipChangedListener primaryClipChangedListener = new ClipboardManager.OnPrimaryClipChangedListener() {
-            public void onPrimaryClipChanged() {
-              cordova.getActivity().runOnUiThread(new Runnable() {
-                public void run() {
-                  webView.loadUrl("javascript:cordova.fireDocumentEvent('itemCopiedToClipboard')");
-                  webView.loadUrl("javascript:console.log('getting there');");
-                }
-              });
-            }
-          };
           clipboard.addPrimaryClipChangedListener(primaryClipChangedListener);
           return true;
         }
 
         return false;
+    }
+
+    public void onDestroy() {
+      ClipboardManager clipboard = (ClipboardManager) cordova.getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
+      if (primaryClipChangedListener != null) {
+        clipboard.removePrimaryClipChangedListener(primaryClipChangedListener);
+      }
     }
 }
 
